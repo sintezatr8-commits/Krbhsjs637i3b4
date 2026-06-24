@@ -25,14 +25,14 @@ interface MCConfig {
     host: string;
     port: number;
     username: string;
-    version: boolean | string;
+    version: string;
 }
 
 const mcConfig: MCConfig = {
     host: process.env.MC_HOST || '',
     port: parseInt(process.env.MC_PORT || '25565'),
     username: process.env.MC_USERNAME || 'MineflayerBot',
-    version: false
+    version: "1.21.4"
 };
 
 let bot: mineflayer.Bot | null = null;
