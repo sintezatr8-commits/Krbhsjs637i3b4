@@ -9,7 +9,9 @@
   "dependencies": {
     "discord.js": "^14.15.3",
     "dotenv": "^16.4.5",
-    "mineflayer": "^4.22.0"
+    "mineflayer": "^4.24.0", 
+    "minecraft-protocol": "^1.49.0",
+    "minecraft-data": "^3.81.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
