@@ -48,6 +48,11 @@ const discordClient = new Client({
     ]
 });
 
+// Проверка: находится ли бот физически на сервере в данный момент
+const isBotInGame = (): boolean => {
+    return !!(bot && bot.entity);
+};
+
 // --- ЛОГИКА MINECRAFT ---
 
 function startMineflayer(): void {
@@ -73,7 +78,8 @@ function startMineflayer(): void {
         logToDiscord(`💬 **[${username}]**: ${message}`);
     });
 
-    bot.on('kick', (reason: string) => {
+    // Исправлено с 'kick' на 'kicked'
+    bot.on('kicked', (reason: string) => {
         logToDiscord(`⚠️ Бота кикнули. Причина: ${reason}`);
         updateControlPanel();
     });
@@ -106,15 +112,15 @@ function stopMineflayer(): void {
 
 // --- ИНТЕРФЕЙС ДИСКОРДА (КНОПКИ И ПАНЕЛЬ) ---
 
-// Генерация красивой панели управления
 function createPanelEmbed(): { embeds: EmbedBuilder[], components: ActionRowBuilder<ButtonBuilder>[] } {
-    const botStatus = (bot && bot.spawned) ? '🟢 В сети (В игре)' : '🔴 Оффлайн';
+    // Исправлена проверка статуса через хелпер isBotInGame()
+    const botStatus = isBotInGame() ? '🟢 В сети (В игре)' : '🔴 Оффлайн';
     const targetStatus = isTargetOnline ? '🔄 Удержание 24/7 Активно' : '⏸️ На паузе (Выключен)';
 
     const embed = new EmbedBuilder()
         .setTitle('🎮 Управление Mineflayer Ботом')
         .setDescription('Интерактивная панель для контроля круглосуточного бота.')
-        .setColor(bot?.spawned ? 0x2ecc71 : 0xe74c3c)
+        .setColor(isBotInGame() ? 0x2ecc71 : 0xe74c3c)
         .addFields(
             { name: 'Статус в игре', value: botStatus, inline: true },
             { name: 'Режим воркера', value: targetStatus, inline: true },
@@ -123,7 +129,6 @@ function createPanelEmbed(): { embeds: EmbedBuilder[], components: ActionRowBuil
         .setTimestamp()
         .setFooter({ text: 'GitHub Worker 24/7 Система' });
 
-    // Кнопки управления
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
             .setCustomId('btn_start')
@@ -149,7 +154,6 @@ function createPanelEmbed(): { embeds: EmbedBuilder[], components: ActionRowBuil
     return { embeds: [embed], components: [row] };
 }
 
-// Отправка или обновление существующей панели в чате
 async function updateControlPanel(): Promise<void> {
     if (!discordChannel) return;
 
@@ -157,10 +161,8 @@ async function updateControlPanel(): Promise<void> {
 
     try {
         if (controlPanelMessage) {
-            // Если панель уже была отправлена, просто редактируем её данные
             await controlPanelMessage.edit(panelData);
         } else {
-            // Если это первый запуск воркера, отправляем новую панель
             controlPanelMessage = await discordChannel.send(panelData);
         }
     } catch (error) {
@@ -175,11 +177,9 @@ function logToDiscord(message: string): void {
     }
 }
 
-// Обработка кликов по кнопкам
 discordClient.on('interactionCreate', async (interaction: Interaction) => {
     if (!interaction.isButton() || interaction.channelId !== process.env.DISCORD_CHANNEL_ID) return;
 
-    // Сразу отвечаем Дискорду, что мы приняли нажатие (чтобы кнопка не "думала" бесконечно)
     await interaction.deferUpdate();
 
     switch (interaction.customId) {
@@ -202,7 +202,6 @@ discordClient.on('interactionCreate', async (interaction: Interaction) => {
     }
 });
 
-// Обработка текстовых команд (для изменения конфига и отправки сообщений в игру)
 discordClient.on('messageCreate', async (message: Message) => {
     if (message.author.bot || message.channel.id !== process.env.DISCORD_CHANNEL_ID) return;
 
@@ -236,7 +235,8 @@ discordClient.on('messageCreate', async (message: Message) => {
     if (command === '!say') {
         const msg = args.join(' ');
         if (!msg) return message.reply('Использование: `!say Всем привет`');
-        if (bot && bot.spawned) {
+        // Исправлено и тут
+        if (bot && isBotInGame()) {
             bot.chat(msg);
             message.react('💬');
         } else {
@@ -252,7 +252,6 @@ discordClient.once('ready', async () => {
         if (channel && channel.isTextBased()) {
             discordChannel = channel as TextChannel;
             
-            // Очищаем старую переменную сообщения при перезапуске воркера, отправляя свежую панель
             controlPanelMessage = null; 
             await updateControlPanel();
 
@@ -266,4 +265,3 @@ discordClient.once('ready', async () => {
 });
 
 discordClient.login(process.env.DISCORD_TOKEN);
-                  
