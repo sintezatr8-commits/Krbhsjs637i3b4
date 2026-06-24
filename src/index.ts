@@ -32,7 +32,7 @@ const mcConfig: MCConfig = {
     host: process.env.MC_HOST || '',
     port: parseInt(process.env.MC_PORT || '25565'),
     username: process.env.MC_USERNAME || 'MineflayerBot',
-    version: "1.21.4"
+    version: "1.21.11"
 };
 
 let bot: mineflayer.Bot | null = null;
